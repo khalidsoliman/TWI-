@@ -29,7 +29,7 @@ void TWI_Init(void)
 void TWI_Start_Bit(void)
 {
 	TWCR =(1<<TWINT)|(1<<TWEN)|(1<<TWSTA);
-	while((!(TWCR&(1<<TWINT)))&&(((TWSR&0xF8)!=START_Bit_Code)||((TWSR&0xF8)!=REPEATED_Bit_Code)));
+	while((!(TWCR&(1<<TWINT)))||(((TWSR&0xF8)!=START_Bit_Code)&&((TWSR&0xF8)!=REPEATED_Bit_Code)));
 }
 #endif
 
@@ -52,7 +52,7 @@ void TWI_SLA_Write(unsigned char SLA_W)
 {
 	TWDR = ((SLA_W<<1)& 0xFE);
 	TWI_EN();
-	while((!(TWCR&(1<<TWINT)))&&(((TWSR&0xF8)!=SLA_W_Transmitted_ACK_Code)));
+	while((!(TWCR&(1<<TWINT)))||((TWSR&0xF8)!=SLA_W_Transmitted_ACK_Code));
 }
 #endif
 
@@ -62,7 +62,7 @@ void TWI_SLA_Read(unsigned char SLA_R)
 	TWDR = ((SLA_R<<1)|0x01);
 	TWI_EN();
 	TWCR|=(1<<TWEA);
-	while((!(TWCR&(1<<TWINT)))&&(((TWSR&0xF8)!=SLA_R_ACK_Code)));
+	while((!(TWCR&(1<<TWINT)))||((TWSR&0xF8)!=SLA_R_ACK_Code));
 }
 #endif
 
@@ -71,16 +71,20 @@ void TWI_Byte_Send(unsigned char byte)
 {
 	TWDR = byte;
 	TWI_EN();
-	while((!(TWCR&(1<<TWINT)))&&(((TWSR&0xF8)!=Data_M_Transmitted_ACK_Code)||((TWSR&0xF8)!=Data_S_Transmitted_ACK_Code)));
+	while((!(TWCR&(1<<TWINT)))||((TWSR&0xF8)!=Data_M_Transmitted_ACK_Code&&(TWSR&0xF8)!=Data_S_Transmitted_ACK_Code));
 }
-
+#if Device == 0
+void TWI_check_slave_Tx(void)
+{
+	while((TWSR&0xf8)!=SLA_R_Received_ACK_Code); //check if the address+r received by the slave and ack send
+}
+#endif
 unsigned char TWI_Byte_Receive(void)
 {
 #if Device == 1
-	while((!(TWCR&(1<<TWINT)))&&(((TWSR&0xF8)!=Data_M_Receive_ACK_Code)));
-
+	while((!(TWCR&(1<<TWINT)))||(((TWSR&0xF8)!=Data_M_Receive_ACK_Code)&&((TWSR&0xF8)!=SLA_R_ACK_Code)));
 #elif Device == 0
-	while((!(TWCR&(1<<TWINT)))&&(((TWSR&0xF8)!=Stop_Or_Repeated_Bit)||(TWSR&0xF8)!=Data_S_Received_ACK_Code));
+	while((!(TWCR&(1<<TWINT)))||((TWSR&0xF8)!=Stop_Or_Repeated_Bit&&(TWSR&0xF8)!=Data_S_Received_ACK_Code&&(TWSR&0xF8)!=SLA_W_Received_ACK_Code));
 #endif
 	TWI_EN();
 	TWCR|=(1<<TWEA);
