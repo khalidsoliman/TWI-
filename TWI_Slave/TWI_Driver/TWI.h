@@ -52,5 +52,6 @@ void TWI_SLA_Write(unsigned char SLA_W);
 void TWI_SLA_Read(unsigned char SLA_R);
 void TWI_Byte_Send(unsigned char byte);
 unsigned char TWI_Byte_Receive(void);
+void TWI_check_slave_Tx(void);
 
 #endif /* TWI_H_ */
